@@ -18,34 +18,38 @@ const Login = () => {
   const { login: loginToContext } = useAuth(); // Use login function from AuthContext
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError('');
+const handleSubmit = async (e: FormEvent<HTMLFormElement>) => { 
+  e.preventDefault();
+  setError('');
+  
+  if (!username.trim() || !password.trim()) {
+    setError('Please enter both username and password');
+    return;
+  }
+  
+  setIsLoading(true);
+  
+  try {
+    const response = await login(username, password);
+    console.log('Response from login:', response);
 
-    if (!username.trim() || !password.trim()) {
-      setError('Please enter both username and password');
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      // Call the login function from api.ts
-      const response = await login(username, password);
-
-      // If the login is successful, the response will contain the token
-      if (response.token) {
-        loginToContext(response.token, username); // Update the AuthContext with token and username
-        navigate('/dashboard');
-      } else {
-        setError('Login failed. Please check your credentials and try again.');
-      }
-    } catch (err) {
+    if (response.ok) {
+      console.log('Cookie set successfully');
+      loginToContext('cookie', username);
+      navigate('/dashboard');
+    } else {
       setError('Login failed. Please check your credentials and try again.');
-    } finally {
-      setIsLoading(false);
     }
-  };
+  } catch (err: any) {
+    console.error('Login error:', err);
+    setError(err.message || 'Login failed. Please try again.');
+  } finally {
+    setIsLoading(false); // Always stop loading, no matter success or failure
+  }
+};
+
+  
+  
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

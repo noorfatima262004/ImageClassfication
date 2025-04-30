@@ -17,72 +17,82 @@ export const fetchApi = async (endpoint: string, options: ApiOptions = {}) => {
     includeAuth = true,
   } = options;
 
-  // Get token from session storage if includeAuth is true
   const token = includeAuth ? sessionStorage.getItem('token') : null;
 
-  // Build headers
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...customHeaders,
   };
 
-  // Add auth header if token exists
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  // Build request options
   const requestOptions: RequestInit = {
     method,
     headers,
+    credentials: 'include', // ✨ Important for cookie handling
   };
 
-  // Add body if it exists
   if (body) {
     requestOptions.body = JSON.stringify(body);
   }
 
-  // Make the request
   const response = await fetch(`${API_URL}${endpoint}`, requestOptions);
 
-  // Check if response is ok
   if (!response.ok) {
-    // Try to parse error response
     try {
       const errorData = await response.json();
       throw new Error(errorData.message || 'An error occurred');
     } catch (error) {
-      // If parsing fails, throw generic error with status
       throw new Error(`Error ${response.status}: ${response.statusText}`);
     }
   }
 
-  // Parse and return response
   return await response.json();
 };
+
 
 // Specialized API functions
 // api.ts
 // api.ts
+// export const login = async (username: string, password: string) => {
+//   const response = await fetch(`${API_URL}/login`, {
+//     method: 'POST',
+//     headers: {
+//       'Content-Type': 'application/json',
+//     },
+//     credentials: 'include', // Send cookie
+//     body: JSON.stringify({ username, password }),
+//   });
+//   return response;
+// };
+
 export const login = async (username: string, password: string) => {
-  const response = await fetch(`${API_URL}/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ username, password }),
-  });
-
-  const data = await response.json();
-
-  if (response.ok) {
-    return data; // This should return { token: 'your-token', username: 'user' }
-  } else {
-    throw new Error(data.message || 'Login failed');
-  }
-};
-
-
+    try {
+      const response = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Important for cookies
+        body: JSON.stringify({ username, password }),
+      });
+      console.log('Login function called with:', username, password, response); // Debugging line
+      if (!response.ok) {
+        // Attempt to parse the response body (JSON error message) when status isn't OK
+        const errorDetails = await response.json();  // Parsing response as JSON
+        // If the error message exists, throw with details
+        throw new Error(`${response.status} - ${errorDetails.message || 'Failed to signup'}`);
+      }
+   // If the signup is successful, return the response JSON
+      return response; // Successful signup returns data from the backend
+    } catch (error) {
+      console.log('Login failed:', error);
+      throw error; // You can re-throw or handle differently based on your app
+    }
+  };
+  
 
 // src/utils/api.ts
 export const signup = async (username: string, password: string) => {
@@ -95,44 +105,65 @@ export const signup = async (username: string, password: string) => {
     },
     body: JSON.stringify({ username, password }),
   });
-
   // If the response is not ok (i.e., status is not 200), throw an error
-  if (!response.ok) {
-    // Attempt to parse the response body (JSON error message) when status isn't OK
-    const errorDetails = await response.json();  // Parsing response as JSON
-
-    // If the error message exists, throw with details
-    throw new Error(`${response.status} - ${errorDetails.error || 'Failed to signup'}`);
-  }
+  const responseData = await response.json(); // ✅ Read once here!
+  console.log('Response data:', responseData); // ✅ Debugging line 
+    if (!response.ok) {
+      throw new Error(responseData.error || responseData.message || 'Sign up Failed');
+    }
 
   // If the signup is successful, return the response JSON
-  return response.json(); // Successful signup returns data from the backend
+  return responseData; // Successful signup returns data from the backend
 };
 
 
-// src/utils/api.ts
 export const uploadImage = async (formData: FormData) => {
-  const token = sessionStorage.getItem('token');
-  console.log('Token:', token); // Debugging line
-  if (!token) {
-    throw new Error('Authentication required');
+  try {
+    const response = await fetch(`${API_URL}/predict`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+
+    const responseData = await response.json(); // ✅ Read once here!
+    console.log('Response data:', responseData); // ✅ Debugging line 
+    if (!response.ok) {
+      throw new Error(responseData.message || 'Prediction failed');
+    }
+
+    console.log('Image upload function called with:', response, responseData); // ✅ Only log responseData
+    return responseData;
+    
+  } catch (error) {
+    console.error('Error during image upload:', error);
+    throw error;
   }
-
-  const response = await fetch(`${API_URL}/predict`, {  // API_URL should be the correct backend URL
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-    body: formData,
-  });
-  console.log('Response:', response); // Debugging line
-  if (!response.ok) {
-    // throw new Error('Failed to upload image');
-    const errorDetails = await response.json();  // Parsing response as JSON
-    throw new Error(`${response.status} - ${errorDetails.error || 'Failed to signup'}`);
-
-  }
-
-  return await response.json();
 };
+
+
+
+
+export const handleLogout = async () => {
+  try {
+    // Call the API using fetchApi, which already returns parsed JSON data
+    const response = await fetchApi('/logout', {
+      method: 'POST',
+      includeAuth: true, // Send token with request
+    });
+
+    // Check if response has expected message or status
+    if (response && response.message) {
+      console.log('Logout successful:', response.message);
+    } else {
+      console.error('Error during logout:', response);
+      throw new Error('Logout failed');
+    }
+
+    return response;
+  } catch (error) {
+    console.error('Logout failed:', error);
+    return null;
+  }
+};
+
 

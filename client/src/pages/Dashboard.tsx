@@ -1,12 +1,15 @@
-import { useState, useRef, ChangeEvent } from 'react';
+import { useEffect, useState, useRef, ChangeEvent } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { uploadImage } from '../utils/api';  // Import uploadImage function
 import Navbar from '../components/Navbar';
 import Button from '../components/Button';
 import Alert from '../components/Alert';
 import { Upload, Image as ImageIcon, Check, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);  // You'll need this state
   const { token, username } = useAuth();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -66,15 +69,22 @@ const Dashboard = () => {
       setUploadError('Please select an image to upload');
       return;
     }
-
+  
+    // Frontend file size validation (example: 5MB limit)
+    const maxSize = 1 * 1024 * 1024; // 5MB
+    if (selectedFile.size > maxSize) {
+      setUploadError('File is too large. Max size is 1MB');
+      return;
+    }
+  
     setIsUploading(true);
     setUploadError('');
     setUploadSuccess('');
-
+  
     try {
       const formData = new FormData();
       formData.append('image', selectedFile);
-
+  
       // Send image to the backend and receive prediction
       const data = await uploadImage(formData);  // Use the uploadImage function from utils/api.ts
       if (!data || !data.predicted_class_name) {
@@ -86,12 +96,26 @@ const Dashboard = () => {
       
     } catch (err) {
       console.error('Upload error:', err);
-      setUploadError('Failed to upload image. Please try again.');
+      setUploadError(err.message || 'Failed to upload image');
     } finally {
       setIsUploading(false);
     }
   };
+  
+  useEffect(() => {
+    console.log("Fetching user data...");
+    console.log("Document cookies:", document.cookie);  // Should show token
+    fetch("http://localhost:5000/me", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("User data:", data);
+        if (!data.user) navigate("/login");
+        else setUser(data.user);
+      });
+  }, []);
+  
 
+  
   const resetUpload = () => {
     setSelectedFile(null);
     setPreviewUrl(null);

@@ -1,22 +1,34 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import FormInput from '../components/FormInput';
 import Button from '../components/Button';
 import Alert from '../components/Alert';
 import Navbar from '../components/Navbar';
 import { UserPlus } from 'lucide-react';
-import { signup } from '../utils/api'; // path thora project ke hisaab se adjust kar lena
-
+import { signup } from '../utils/api'; // Adjust path if needed
 
 const Signup = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
+  const [step, setStep] = useState<'signup' | 'verify-otp'>('signup');
+  const [timeLeft, setTimeLeft] = useState(60);
+
   const navigate = useNavigate();
+  const API_URL = 'http://localhost:5000'; // Replace with your actual API URL
+  // Timer countdown for OTP
+  useEffect(() => {
+    if (step === 'verify-otp' && timeLeft > 0) {
+      const timer = setInterval(() => {
+        setTimeLeft(prevTime => prevTime - 1);
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [step, timeLeft]);
 
   const validateForm = () => {
     if (!username.trim()) {
@@ -49,57 +61,63 @@ const Signup = () => {
     return true;
   };
 
-  // const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-  //   e.preventDefault();
-  //   setError('');
-  //   setSuccess('');
-    
-  //   if (!validateForm()) {
-  //     return;
-  //   }
-    
-  //   setIsLoading(true);
-    
-  //   try {
-  //     // API call to your backend should replace this.
-  //     // Example API call:
-  //     // const response = await api.signup({ username, password });
-  //     await new Promise(resolve => setTimeout(resolve, 1000)); // simulate API call
-      
-  //     setSuccess('Account created successfully! Redirecting to login...');
-      
-  //     // Redirect to login page after signup
-  //     setTimeout(() => {
-  //       setUsername('');
-  //       setPassword('');
-  //       setConfirmPassword('');
-  //       navigate('/login');
-  //     }, 2000);
-  //   } catch (err) {
-  //     console.error('Signup error:', err);
-  //     setError('Signup failed. Please try again.');
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  // Handle sending OTP
+  const handleSendOtp = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setSuccess('');
   
-    if (!validateForm()) {
-      return;
-    }
-  
+    if (!validateForm()) return;
+
     setIsLoading(true);
-  
+
     try {
-      console.log("Submitting signup request...");
-      await signup(username, password); // ← API call to backend
-      console.log("Signup successful!");
-  
-      setSuccess('Account created successfully! Redirecting to login...');
-      
+      const res = await fetch(`${API_URL}/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error('Error response:', errorData, res);
+        throw new Error(errorData.error || 'Failed to send OTP');
+      }
+
+      setStep('verify-otp');
+      setTimeLeft(60); // Reset timer
+      setSuccess('OTP sent to your email!');
+    } catch (err: any) {
+      setError(err.message || 'Failed to send OTP');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle OTP verification
+  const handleVerifyOtp = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    setIsLoading(true);
+
+    try {
+      const res = await fetch(`${API_URL}/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, otp }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Invalid OTP');
+      }
+
+      // If OTP verified, now create account
+      await signup(username, password);
+
+      setSuccess('Account created successfully! Redirecting...');
       setTimeout(() => {
         setUsername('');
         setPassword('');
@@ -107,37 +125,12 @@ const Signup = () => {
         navigate('/login');
       }, 2000);
     } catch (err: any) {
-      console.error('Signup error:', err);
-  
-      // Now, we handle the error message thrown by signup function
-      if (err.message) {
-        console.log("Error Message:", err.message);
-  
-        // Check if the error contains "Username already taken"
-        if (err.message.includes('Username already taken')) {
-          setError('Username already taken. Please choose another one.');
-        } else if (err.message.includes('User already exists')) {
-          setError('This username is already registered. Please try a different one.');
-        } else {
-          // General error message (fallback)
-          setError(`Signup failed: ${err.message || 'Please try again.'}`);
-        }
-      } else {
-        // General error handling (e.g., network issues)
-        setError('Signup failed. Please try again.');
-      }
+      setError(err.message || 'OTP verification failed');
     } finally {
       setIsLoading(false);
     }
   };
-  
-  
-  
-  
-  
-  
-  
-  
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar />
@@ -148,63 +141,99 @@ const Signup = () => {
             <div className="mx-auto h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center">
               <UserPlus className="h-6 w-6 text-indigo-600" />
             </div>
-            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Create an account</h2>
+            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+              {step === 'signup' ? 'Create an account' : 'Verify OTP'}
+            </h2>
             <p className="mt-2 text-sm text-gray-600">
-              Or{' '}
-              <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
-                sign in to your account
-              </Link>
+              {step === 'signup' ? (
+                <>Or{' '}
+                  <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+                    sign in to your account
+                  </Link>
+                </>
+              ) : (
+                <span>Enter the OTP sent to your email</span>
+              )}
             </p>
           </div>
-          
+
           {error && <Alert type="error" message={error} onClose={() => setError('')} />}
           {success && <Alert type="success" message={success} />}
           
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div className="rounded-md shadow-sm space-y-4">
-              <FormInput
-                id="username"
-                label="Username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Choose a username"
-              />
-              
-              <FormInput
-                id="password"
-                label="Password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Create a password"
-              />
-              
-              <FormInput
-                id="confirm-password"
-                label="Confirm Password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm your password"
-              />
-            </div>
+          {/* Signup Form */}
+          {step === 'signup' && (
+            <form className="mt-8 space-y-6" onSubmit={handleSendOtp}>
+              <div className="rounded-md shadow-sm space-y-4">
+                <FormInput
+                  id="username"
+                  label="Username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Choose a username"
+                />
+                
+                <FormInput
+                  id="password"
+                  label="Password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Create a password"
+                />
+                
+                <FormInput
+                  id="confirm-password"
+                  label="Confirm Password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm your password"
+                />
+              </div>
 
-            <div>
-              <Button 
-                type="submit" 
-                fullWidth 
-                isLoading={isLoading}
-              >
-                Create Account
-              </Button>
-            </div>
-          </form>
+              <div>
+                <Button 
+                  type="submit" 
+                  fullWidth 
+                  isLoading={isLoading}
+                >
+                  Send OTP
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {/* OTP Verification Form */}
+          {step === 'verify-otp' && (
+            <form className="mt-8 space-y-6" onSubmit={handleVerifyOtp}>
+              <div className="rounded-md shadow-sm space-y-4">
+                <FormInput
+                  id="otp"
+                  label={`Enter OTP (expires in ${timeLeft}s)`}
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="Enter OTP received"
+                />
+              </div>
+
+              <div>
+                <Button 
+                  type="submit" 
+                  fullWidth 
+                  isLoading={isLoading}
+                >
+                  Verify OTP
+                </Button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
       
       <footer className="mt-8 py-4 text-center text-sm text-gray-500">
-        &copy; {new Date().getFullYear()} ImageLab. All rights reserved.
+        &copy; {new Date().getFullYear()} YourCompany. All rights reserved.
       </footer>
     </div>
   );

@@ -1,0 +1,68 @@
+# ===============================
+# 🔒 Root-level & shared ignores
+# ===============================
+.env
+.env.*
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE/editor settings
+.vscode/
+.idea/
+*.swp
+
+# Node and Python artifacts
+node_modules/
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+build/
+
+# Compiled model or temp files
+*.pkl
+*.h5
+*.pt
+*.onnx
+
+# JWTs, secrets, temp
+*.jwt
+*.bak
+*.tmp
+
+# OS-specific trash
+ehthumbs.db
+Desktop.ini
+
+# Static/image/media uploads (optional)
+**/static/images/
+**/uploads/
+
+# ===============================
+# ⚛️ React frontend - /client
+# ===============================
+client/node_modules/
+client/.env
+client/.env.*
+client/build/
+client/dist/
+client/npm-debug.log
+client/yarn-error.log
+
+# ===============================
+# 🐍 Flask backend - /server
+# ===============================
+server/.env
+server/.env.*
+server/__pycache__/
+server/env/
+server/venv/
+server/model_secret.key
+server/models.zip
+server/models
+server/.venv/
+server/.mypy_cache/
+server/.pytest_cache/
+server/instance/
