@@ -34,7 +34,7 @@ app = Flask(__name__)
 CORS(app, supports_credentials=True, origins=['http://localhost:5173'])
 limiter = Limiter(get_remote_address, app=app)
 
-MAX_FILE_SIZE = 1 * 1024 * 1024  # 5MB
+MAX_FILE_SIZE = 1 * 1024 * 1024  
 
 
 @app.errorhandler(429)
@@ -318,9 +318,73 @@ def login():
     if decrypted_name != username:
         return jsonify({"message": "Invalid username"}), 401
 
+    # Check for account lockout - new code
+    current_time = datetime.utcnow()
+    
+    # Initialize failed_attempts if it doesn't exist
+    if 'failed_attempts' not in user_data:
+        collection.update_one(
+            {"username_hash": hashed_username},
+            {"$set": {"failed_attempts": 0, "last_failed_attempt": None, "account_locked_until": None}}
+        )
+        user_data['failed_attempts'] = 0
+    
+    # Check if account is locked
+    if user_data.get('account_locked_until'):
+        lock_time = user_data['account_locked_until']
+        if isinstance(lock_time, str):
+            lock_time = datetime.fromisoformat(lock_time)
+        
+        if current_time < lock_time:
+            remaining_time = (lock_time - current_time).total_seconds() / 60
+            return jsonify({
+                "message": f"Account is temporarily locked. Please try again in {int(remaining_time)} minutes.",
+                "locked": True,
+                "lockout_remaining": int(remaining_time)
+            }), 403
+
     # Check password
     if not bcrypt.checkpw(password.encode('utf-8'), user_data['password'].encode('utf-8')):
-        return jsonify({"message": "Invalid password"}), 401
+        # Update failed attempts count
+        new_attempt_count = user_data.get('failed_attempts', 0) + 1
+        update_data = {
+            "failed_attempts": new_attempt_count,
+            "last_failed_attempt": current_time
+        }
+        
+        # Lock account if failed attempts >= 3
+        if new_attempt_count >= 3:
+            # Lock for 15 minutes
+            lockout_time = current_time + timedelta(minutes=15)
+            update_data["account_locked_until"] = lockout_time
+            
+            collection.update_one(
+                {"username_hash": hashed_username},
+                {"$set": update_data}
+            )
+            
+            return jsonify({
+                "message": "Account locked due to too many failed attempts. Please try again after 15 minutes.",
+                "locked": True,
+                "lockout_remaining": 15
+            }), 403
+        else:
+            collection.update_one(
+                {"username_hash": hashed_username},
+                {"$set": update_data}
+            )
+            
+            remaining_attempts = 3 - new_attempt_count
+            return jsonify({
+                "message": f"Invalid password. {remaining_attempts} attempts remaining before account lockout.",
+                "remaining_attempts": remaining_attempts
+            }), 401
+
+    # If login successful, reset failed attempts counter
+    collection.update_one(
+        {"username_hash": hashed_username},
+        {"$set": {"failed_attempts": 0, "last_failed_attempt": None, "account_locked_until": None}}
+    )
 
     # Generate JWT token
     token = jwt.encode({
@@ -332,9 +396,8 @@ def login():
     response.set_cookie('token', token, httponly=True, secure=True, samesite='Strict', max_age=3600)
 
     return response, 200
-
 @app.route('/predict', methods=['POST'])
-@limiter.limit("5 per day")  # 3 predictions per day per user/IP
+@limiter.limit("6 per day")  # 3 predictions per day per user/IP
 def predict():
     try:
         # Get the token from Cookies instead of headers
@@ -358,7 +421,7 @@ def predict():
         file_length = file.tell()
         file.seek(0)  # Reset file pointer
         if file_length > MAX_FILE_SIZE:
-            return jsonify({"success": False, "message": "File size is too large. Maximum allowed size is 5MB"}), 400
+            return jsonify({"success": False, "message": "File size is too large. Maximum allowed size is 2MB"}), 400
 
         if not allowed_file(file.filename):
             return jsonify({"error": "Invalid image type"}), 400

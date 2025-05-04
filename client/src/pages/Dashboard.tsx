@@ -1,15 +1,16 @@
 import { useEffect, useState, useRef, ChangeEvent } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { uploadImage } from '../utils/api';  // Import uploadImage function
+import { uploadImage } from '../utils/api';
 import Navbar from '../components/Navbar';
 import Button from '../components/Button';
 import Alert from '../components/Alert';
-import { Upload, Image as ImageIcon, Check, X } from 'lucide-react';
+import { Upload, Image as ImageIcon, Check, X, Globe, Shield, Code, BarChart2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);  // You'll need this state
+  const [user, setUser] = useState(null);
   const { token, username } = useAuth();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -40,17 +41,17 @@ const Dashboard = () => {
       setUploadError('Please select a valid image file (JPG or PNG)');
       setSelectedFile(null);
       setPreviewUrl(null);
-      e.target.value = ''; // Reset the input
+      e.target.value = '';
       return;
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    // Validate file size
+    const maxSize = 2 * 1024 * 1024;
     if (file.size > maxSize) {
-      setUploadError('Image size should be less than 5MB');
+      setUploadError('Image size should be less than 2MB');
       setSelectedFile(null);
       setPreviewUrl(null);
-      e.target.value = ''; // Reset the input
+      e.target.value = '';
       return;
     }
 
@@ -70,10 +71,9 @@ const Dashboard = () => {
       return;
     }
   
-    // Frontend file size validation (example: 5MB limit)
-    const maxSize = 1 * 1024 * 1024; // 5MB
+    const maxSize = 2 * 1024 * 1024;
     if (selectedFile.size > maxSize) {
-      setUploadError('File is too large. Max size is 1MB');
+      setUploadError('File is too large. Max size is 2MB');
       return;
     }
   
@@ -85,14 +85,12 @@ const Dashboard = () => {
       const formData = new FormData();
       formData.append('image', selectedFile);
   
-      // Send image to the backend and receive prediction
-      const data = await uploadImage(formData);  // Use the uploadImage function from utils/api.ts
+      const data = await uploadImage(formData);
       if (!data || !data.predicted_class_name) {
         throw new Error('Invalid response from server');
       }
       setUploadSuccess('Image uploaded successfully!');
-      console.log('Prediction data:', data);  // Debugging line
-      setPrediction(data.predicted_class_name);  // Assuming the backend sends 'predicted_class'
+      setPrediction(data.predicted_class_name);
       
     } catch (err) {
       console.error('Upload error:', err);
@@ -104,7 +102,6 @@ const Dashboard = () => {
   
   useEffect(() => {
     console.log("Fetching user data...");
-    console.log("Document cookies:", document.cookie);  // Should show token
     fetch("http://localhost:5000/me", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
@@ -113,8 +110,6 @@ const Dashboard = () => {
         else setUser(data.user);
       });
   }, []);
-  
-
   
   const resetUpload = () => {
     setSelectedFile(null);
@@ -128,51 +123,93 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex flex-col">
       <Navbar />
       
-      <div className="flex-1 container mx-auto px-4 py-8">
-        <div className="max-w-3xl mx-auto">
-          <div className="bg-white rounded-xl shadow-md overflow-hidden">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="flex-1 container mx-auto px-4 py-8"
+      >
+        <div className="max-w-4xl mx-auto">
+          {/* Main Upload Card */}
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white rounded-xl shadow-xl overflow-hidden hover:shadow-2xl transition-shadow duration-300"
+          >
             <div className="p-8">
               <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Image Upload & Analysis</h1>
+                <motion.h1 
+                  initial={{ x: -10 }}
+                  animate={{ x: 0 }}
+                  className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent"
+                >
+                  Image Upload & Analysis
+                </motion.h1>
               </div>
               
-              <p className="text-gray-600 mb-6">
-                Welcome, <span className="font-medium">{username}</span>! Upload an image below to get predictions.
-              </p>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="text-gray-600 mb-6"
+              >
+                Welcome, <span className="font-medium text-indigo-600">{username}</span>! Upload an image below to get predictions.
+              </motion.p>
               
-              {uploadError && (
-                <Alert 
-                  type="error" 
-                  message={uploadError} 
-                  onClose={() => setUploadError('')} 
-                />
-              )}
-              
-              {uploadSuccess && (
-                <Alert 
-                  type="success" 
-                  message={uploadSuccess} 
-                  onClose={() => setUploadSuccess('')} 
-                />
-              )}
+              <AnimatePresence>
+                {uploadError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                  >
+                    <Alert 
+                      type="error" 
+                      message={uploadError} 
+                      onClose={() => setUploadError('')} 
+                    />
+                  </motion.div>
+                )}
+                
+                {uploadSuccess && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                  >
+                    <Alert 
+                      type="success" 
+                      message={uploadSuccess} 
+                      onClose={() => setUploadSuccess('')} 
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
               
               <div className="mt-6">
-                <div className={`border-2 border-dashed rounded-lg p-6 ${
-                  previewUrl ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300 bg-gray-50'
-                } transition-colors duration-200 ease-in-out`}>
-                  
+                <motion.div 
+                  whileHover={{ scale: 1.01 }}
+                  className={`border-2 border-dashed rounded-xl p-8 ${
+                    previewUrl ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
+                  } transition-all duration-300 ease-in-out`}
+                >
                   {!previewUrl ? (
-                    <div className="text-center">
-                      <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-center"
+                    >
+                      <ImageIcon className="mx-auto h-14 w-14 text-gray-400 mb-4" />
                       <div className="mt-4 flex text-sm text-gray-600 justify-center">
                         <label 
                           htmlFor="file-upload" 
-                          className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none"
+                          className="relative cursor-pointer rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none transition-colors duration-200"
                         >
-                          <span>Upload an image</span>
+                          <span className="text-lg">Upload an image</span>
                           <input 
                             id="file-upload" 
                             ref={fileInputRef}
@@ -183,78 +220,161 @@ const Dashboard = () => {
                             onChange={handleFileChange}
                           />
                         </label>
-                        <p className="pl-1">or drag and drop</p>
+                        <p className="pl-2 text-gray-500">or drag and drop</p>
                       </div>
-                      <p className="text-xs text-gray-500 mt-2">
-                        PNG, JPG up to 5MB
+                      <p className="text-sm text-gray-500 mt-3">
+                        PNG, JPG up to 2MB
                       </p>
-                    </div>
+                    </motion.div>
                   ) : (
-                    <div className="space-y-4">
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="space-y-4"
+                    >
                       <div className="flex justify-between items-start">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
                           {selectedFile?.name}
                         </div>
                         <button 
                           onClick={resetUpload}
-                          className="ml-2 bg-white rounded-full p-1 text-gray-400 hover:text-gray-500 focus:outline-none"
+                          className="ml-2 bg-white rounded-full p-1 text-gray-400 hover:text-gray-500 focus:outline-none transition-colors hover:bg-gray-100"
                         >
                           <span className="sr-only">Remove</span>
-                          <X size={16} />
+                          <X size={18} />
                         </button>
                       </div>
                       <div className="flex justify-center">
-                        <img 
+                        <motion.img 
+                          initial={{ scale: 0.9 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: "spring", stiffness: 200 }}
                           src={previewUrl} 
                           alt="Preview" 
-                          className="max-h-64 max-w-full object-contain rounded-lg" 
+                          className="max-h-72 max-w-full object-contain rounded-lg shadow-sm border border-gray-200" 
                         />
                       </div>
-                    </div>
+                    </motion.div>
                   )}
-                </div>
+                </motion.div>
                 
-                <div className="mt-6 flex justify-center">
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="mt-6 flex justify-center"
+                >
                   <Button
                     onClick={handleUpload}
                     disabled={!selectedFile || isUploading}
                     isLoading={isUploading}
+                    className="px-8 py-3 rounded-lg shadow-md hover:shadow-lg transition-all hover:bg-indigo-700 bg-gradient-to-r from-indigo-600 to-blue-600"
                   >
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload and Analyze
+                    <Upload className="mr-2 h-5 w-5" />
+                    <span className="font-medium">Upload and Analyze</span>
                   </Button>
-                </div>
+                </motion.div>
               </div>
               
-              {prediction && (
-                <div className="mt-8 p-4 bg-indigo-50 border border-indigo-100 rounded-lg animate-fadeIn">
-                  <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                    <Check className="mr-2 h-5 w-5 text-green-500" />
-                    Analysis Result
-                  </h3>
-                  <p className="mt-2 text-gray-700">{prediction}</p>
-                </div>
-              )}
+              <AnimatePresence>
+                {prediction && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    className="mt-8 p-6 bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-xl shadow-inner"
+                  >
+                    <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                      <Check className="mr-2 h-5 w-5 text-green-500" />
+                      Analysis Result
+                    </h3>
+                    <motion.p 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                      className="mt-3 text-gray-700 font-medium text-lg bg-white p-3 rounded-lg shadow-sm border border-gray-200"
+                    >
+                      {prediction}
+                    </motion.p>
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: "100%" }}
+                      transition={{ delay: 0.3, duration: 0.8 }}
+                      className="mt-4 h-1.5 bg-gradient-to-r from-indigo-300 to-blue-300 rounded-full"
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-          </div>
-          
-          <div className="mt-8 bg-white rounded-xl shadow-md overflow-hidden p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">How It Works</h2>
-            <ol className="list-decimal pl-5 space-y-2 text-gray-700">
-              <li>Upload an image using the form above</li>
-              <li>Our system will analyze the image</li>
-              <li>View the predictions and results</li>
+          </motion.div>
+
+          {/* How It Works Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className="mt-8 bg-white rounded-xl shadow-xl overflow-hidden p-8 border border-gray-100 hover:shadow-2xl transition-shadow duration-300"
+          >
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 pb-3 border-b border-gray-200 flex items-center">
+              <Globe className="mr-2 text-indigo-600" size={24} />
+              How It Works
+            </h2>
+            <ol className="list-decimal pl-6 space-y-5 text-gray-700">
+              <motion.li 
+                initial={{ x: -20 }}
+                animate={{ x: 0 }}
+                transition={{ delay: 0.5 }}
+                className="text-lg leading-relaxed"
+              >
+                <span className="font-semibold text-indigo-600">Upload an image</span> using the form above
+              </motion.li>
+              <motion.li 
+                initial={{ x: -20 }}
+                animate={{ x: 0 }}
+                transition={{ delay: 0.6 }}
+                className="text-lg leading-relaxed"
+              >
+                <span className="font-semibold text-indigo-600">Our system will analyze</span> the image using AI technology
+              </motion.li>
+              <motion.li 
+                initial={{ x: -20 }}
+                animate={{ x: 0 }}
+                transition={{ delay: 0.7 }}
+                className="text-lg leading-relaxed"
+              >
+                <span className="font-semibold text-indigo-600">View the predictions</span> and detailed results
+              </motion.li>
             </ol>
-            <p className="mt-4 text-gray-600">
-              This system uses advanced machine learning algorithms to analyze and classify images.
-            </p>
-          </div>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8 }}
+              className="mt-6 p-4 bg-indigo-50 rounded-lg border border-indigo-100"
+            >
+              <div className="flex items-start">
+                <Shield className="flex-shrink-0 mt-1 mr-3 text-indigo-600" size={18} />
+                <p className="text-gray-600">
+                  This system uses <span className="font-medium text-indigo-600">advanced machine learning algorithms</span> to analyze and classify images with high accuracy.
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
       
-      <footer className="mt-8 py-4 text-center text-sm text-gray-500">
-        &copy; {new Date().getFullYear()} ImageLab. All rights reserved.
-      </footer>
+      {/* Footer */}
+      <motion.footer 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="mt-12 py-6 bg-white border-t border-gray-200"
+      >
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-gray-500 text-sm">
+            &copy; {new Date().getFullYear()} ImageLab. All rights reserved.
+          </p>
+        </div>
+      </motion.footer>
     </div>
   );
 };

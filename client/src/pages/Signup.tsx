@@ -32,7 +32,7 @@ const Signup = () => {
 
   const validateForm = () => {
     if (!username.trim()) {
-      setError('Username is required');
+      setError('Email is required');
       return false;
     }
     
@@ -166,11 +166,11 @@ const Signup = () => {
               <div className="rounded-md shadow-sm space-y-4">
                 <FormInput
                   id="username"
-                  label="Username"
+                  label="Email"
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Choose a username"
+                  placeholder="Choose a Email"
                 />
                 
                 <FormInput

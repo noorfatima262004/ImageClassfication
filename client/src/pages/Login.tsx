@@ -9,47 +9,63 @@ import Navbar from '../components/Navbar';
 import { Lock } from 'lucide-react';
 import { login } from '../utils/api'; // path should be adjusted
 
+
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
+  const [accountLocked, setAccountLocked] = useState(false);
+  const [lockoutRemaining, setLockoutRemaining] = useState<number | null>(null);
 
   const { login: loginToContext } = useAuth(); // Use login function from AuthContext
   const navigate = useNavigate();
 
-const handleSubmit = async (e: FormEvent<HTMLFormElement>) => { 
-  e.preventDefault();
-  setError('');
-  
-  if (!username.trim() || !password.trim()) {
-    setError('Please enter both username and password');
-    return;
-  }
-  
-  setIsLoading(true);
-  
-  try {
-    const response = await login(username, password);
-    console.log('Response from login:', response);
-
-    if (response.ok) {
-      console.log('Cookie set successfully');
-      loginToContext('cookie', username);
-      navigate('/dashboard');
-    } else {
-      setError('Login failed. Please check your credentials and try again.');
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => { 
+    e.preventDefault();
+    setError('');
+    
+    if (!username.trim() || !password.trim()) {
+      setError('Please enter both Email and password');
+      return;
     }
-  } catch (err: any) {
-    console.error('Login error:', err);
-    setError(err.message || 'Login failed. Please try again.');
-  } finally {
-    setIsLoading(false); // Always stop loading, no matter success or failure
-  }
-};
+    
+    setIsLoading(true);
+    
+    try {
+      const response = await login(username, password);
+      console.log('Response status:', response.status);
 
-  
-  
+      if (response.ok) {
+        // Successful login
+        console.log('Login successful');
+        loginToContext('cookie', username);
+        navigate('/dashboard');
+      } else {
+        const data = await response.json();
+        
+        if (response.status === 403 && data.locked) {
+          // Account locked
+          setAccountLocked(true);
+          setLockoutRemaining(data.lockout_remaining || null);
+          setError(data.message || 'Your account has been temporarily locked due to too many failed attempts.');
+        } else if (response.status === 401 && data.remaining_attempts !== undefined) {
+          // Invalid password with remaining attempts
+          setRemainingAttempts(data.remaining_attempts);
+          setError(data.message || `Invalid password. ${data.remaining_attempts} attempts remaining before account lockout.`);
+        } else {
+          // Other error
+          setError(data.message || 'Login failed. Please check your credentials and try again.');
+        }
+      }
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message || 'Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -69,17 +85,37 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
             </p>
           </div>
 
-          {error && <Alert type="error" message={error} onClose={() => setError('')} />}
+          {/* Display error message with appropriate styling */}
+          {error && (
+            <Alert 
+              type={accountLocked ? "warning" : remainingAttempts === 1 ? "error" : "info"} 
+              message={error} 
+              onClose={() => setError('')} 
+            />
+          )}
+
+          {/* Countdown timer if account is locked */}
+          {accountLocked && lockoutRemaining && (
+            <div className="text-center p-3 bg-yellow-50 border border-yellow-100 rounded-md">
+              <p className="text-yellow-800">
+                Account locked for <span className="font-bold">{lockoutRemaining} minutes</span>
+              </p>
+              <p className="text-sm text-yellow-600 mt-1">
+                Please try again later or contact support.
+              </p>
+            </div>
+          )}
 
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div className="rounded-md shadow-sm space-y-4">
               <FormInput
                 id="username"
-                label="Username"
+                label="Email"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
+                placeholder="Enter your Email"
+                disabled={accountLocked}
               />
               <FormInput
                 id="password"
@@ -88,14 +124,36 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
+                disabled={accountLocked}
               />
             </div>
 
             <div>
-              <Button type="submit" fullWidth isLoading={isLoading}>
+              <Button 
+                type="submit" 
+                fullWidth 
+                isLoading={isLoading}
+                disabled={accountLocked}
+              >
                 Sign in
               </Button>
             </div>
+            
+            {remainingAttempts === 1 && !accountLocked && (
+              <div className="text-center mt-2">
+                <p className="text-sm font-medium text-red-600">
+                  Warning: Last attempt before account lockout!
+                </p>
+              </div>
+            )}
+            
+            {accountLocked && (
+              <div className="text-center mt-2">
+                <Link to="/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500">
+                  Forgot your password?
+                </Link>
+              </div>
+            )}
           </form>
         </div>
       </div>
@@ -108,3 +166,6 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
 };
 
 export default Login;
+
+
+

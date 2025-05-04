@@ -68,31 +68,39 @@ export const fetchApi = async (endpoint: string, options: ApiOptions = {}) => {
 //   return response;
 // };
 
-export const login = async (username: string, password: string) => {
-    try {
-      const response = await fetch(`${API_URL}/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Important for cookies
-        body: JSON.stringify({ username, password }),
-      });
-      console.log('Login function called with:', username, password, response); // Debugging line
-      if (!response.ok) {
-        // Attempt to parse the response body (JSON error message) when status isn't OK
-        const errorDetails = await response.json();  // Parsing response as JSON
-        // If the error message exists, throw with details
-        throw new Error(`${response.status} - ${errorDetails.message || 'Failed to signup'}`);
-      }
-   // If the signup is successful, return the response JSON
-      return response; // Successful signup returns data from the backend
-    } catch (error) {
-      console.log('Login failed:', error);
-      throw error; // You can re-throw or handle differently based on your app
-    }
-  };
-  
+interface LoginResponse {
+  ok: boolean;
+  status: number;
+  json: () => Promise<any>;
+}
+
+// Login API function
+export const login = async (username: string, password: string): Promise<LoginResponse> => {
+  try {
+    const response = await fetch(`${API_URL}/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include', // Important for cookies
+      body: JSON.stringify({ username, password }),
+    });
+    
+    console.log('Login function called with:', username, 'password:', '*****', 'status:', response.status); 
+
+    // Return full response to handle different status codes in the component
+    return {
+      ok: response.ok,
+      status: response.status,
+      json: () => response.json()
+    };
+    
+  } catch (error) {
+    console.log('Login request failed:', error);
+    throw error;
+  }
+};
+
 
 // src/utils/api.ts
 export const signup = async (username: string, password: string) => {

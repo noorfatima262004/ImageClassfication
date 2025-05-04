@@ -12,3 +12,5 @@ Flask-Limiter
 itsdangerous
 secure-smtplib
 cryptography
+Crypto
+pycryptodome

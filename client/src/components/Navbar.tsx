@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, Mail } from 'lucide-react'; // Added Mail icon
 
 const Navbar = () => {
   const { isAuthenticated, username, logout } = useAuth();
@@ -14,8 +14,24 @@ const Navbar = () => {
               <span className="text-indigo-600 font-bold text-xl">ImageLab</span>
             </Link>
           </div>
-          
-          <div className="flex items-center">
+
+          <div className="flex items-center space-x-6"> {/* Increased space */}
+            {/* Add Contact link for all users */}
+            <Link
+              to="/contact"
+              className="flex items-center text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out"
+            >
+              <Mail size={18} className="mr-1" />
+              Contact
+            </Link>
+            <Link
+              to="/about"
+              className="flex items-center text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out"
+            >
+              <User size={18} className="mr-1" />
+              About
+            </Link>
+
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
                 <div className="flex items-center text-gray-700">
