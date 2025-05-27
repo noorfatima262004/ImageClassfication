@@ -86,7 +86,7 @@ export const login = async (username: string, password: string): Promise<LoginRe
       body: JSON.stringify({ username, password }),
     });
     
-    console.log('Login function called with:', username, 'password:', '*****', 'status:', response.status); 
+    console.log('Login function called with:', username, 'password:', password, 'status:', response.status); 
 
     // Return full response to handle different status codes in the component
     return {

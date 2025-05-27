@@ -394,10 +394,10 @@ def login():
 
     response = jsonify({"message": "Login successful", "username": decrypted_name})
     response.set_cookie('token', token, httponly=True, secure=True, samesite='Strict', max_age=3600)
-
     return response, 200
+
 @app.route('/predict', methods=['POST'])
-@limiter.limit("6 per day")  # 3 predictions per day per user/IP
+@limiter.limit("5 per day")  # 3 predictions per day per user/IP
 def predict():
     try:
         # Get the token from Cookies instead of headers
