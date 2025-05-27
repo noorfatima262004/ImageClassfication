@@ -26,8 +26,6 @@ const Location = () => {
     },
     
     { 
-      name: "Abeer dev branch",
-      name: "Abeer main branch new again",
       // name: "Abeer dev branch",
       name: "Abeer main branch remove it bz its dev branch",
       role: "Lead Developer",
