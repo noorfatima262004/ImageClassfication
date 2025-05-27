@@ -25,7 +25,7 @@ const Location = () => {
       img: "/image/NoorFatima.jpg"
     },
     {
-      name: "Abeer",
+      name: "Abeer dev branch",
       role: "Lead Developer",
       bio: "Full-stack developer and machine learning engineer",
       img: "/image/NoorFatima.jpg"
