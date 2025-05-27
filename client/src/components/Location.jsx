@@ -3,18 +3,8 @@ import { Link } from "react-router-dom";
 import { User, Globe, Shield, Code, BarChart2 } from "lucide-react";
 import Navbar from "./Navbar";
 
-const AboutPage = () => {
+const Location = () => {
   const features = [
-    {
-      icon: <Globe size={24} className="text-indigo-600" />,
-      title: "Global Reach",
-      description: "Our platform serves users from over 50 countries worldwide."
-    },
-    {
-      icon: <Shield size={24} className="text-indigo-600" />,
-      title: "Secure Platform",
-      description: "We prioritize your data security with enterprise-grade encryption."
-    },
     {
       icon: <Code size={24} className="text-indigo-600" />,
       title: "Cutting-Edge Tech",
@@ -35,9 +25,9 @@ const AboutPage = () => {
       img: "/image/NoorFatima.jpg"
     },
     {
-      name: "Abeer Fatima",
+      name: "Abeer",
       role: "Lead Developer",
-      bio: "Full-stack developer and machine learning master",
+      bio: "Full-stack developer and machine learning engineer",
       img: "/image/NoorFatima.jpg"
     },
   ];
@@ -177,4 +167,4 @@ const AboutPage = () => {
   );
 };
 
-export default AboutPage;
+export default Location;

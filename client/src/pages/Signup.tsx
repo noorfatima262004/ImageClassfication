@@ -52,8 +52,9 @@ const Signup = () => {
     }
 
     // Optional: Add additional validation like checking for password strength, etc.
-    const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/; // example pattern
+    const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d).{6,}$/;
     if (!passwordPattern.test(password)) {
+      console.error('Password validation failed', { password });
       setError('Password must contain at least one letter and one number');
       return false;
     }
@@ -189,7 +190,7 @@ const Signup = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirm your password"
-                />
+                  />
               </div>
 
               <div>

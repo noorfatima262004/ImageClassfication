@@ -172,7 +172,7 @@ const ContactPage = () => {
                 </div>
                 <div className="ml-4">
                   <h3 className="text-lg font-medium">Phone</h3>
-                  <p className="mt-1 text-indigo-100">+1 (555) 123-4567</p>
+                  <p className="mt-1 text-indigo-100">+92 (555) 123-4597</p>
                 </div>
               </div>
               
@@ -184,7 +184,7 @@ const ContactPage = () => {
                 </div>
                 <div className="ml-4">
                   <h3 className="text-lg font-medium">Email</h3>
-                  <p className="mt-1 text-indigo-100">contact@example.com</p>
+                  <p className="mt-1 text-indigo-100">noorfatima@gmail.com</p>
                 </div>
               </div>
               
@@ -197,7 +197,7 @@ const ContactPage = () => {
                 </div>
                 <div className="ml-4">
                   <h3 className="text-lg font-medium">Address</h3>
-                  <p className="mt-1 text-indigo-100">123 Business Ave, Suite 400<br />San Francisco, CA 94107</p>
+                  <p className="mt-1 text-indigo-100">DHA, Phase 6<br />Lahore, Pakistan</p>
                 </div>
               </div>
             </div>
