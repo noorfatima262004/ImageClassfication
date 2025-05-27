@@ -24,9 +24,9 @@ const Location = () => {
       bio: "AI specialist with 10+ years in computer vision",
       img: "/image/NoorFatima.jpg"
     },
-    {
-      name: "Abeer dev branch",
+    
     { 
+      name: "Abeer dev branch",
       name: "Abeer main branch",
       role: "Lead Developer",
       bio: "Full-stack developer and machine learning engineer",
